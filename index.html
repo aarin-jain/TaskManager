@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Manager</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>Task Manager</h1>
+      <p>Track work by priority, due date, and status.</p>
+    </header>
+
+    <section class="panel">
+      <h2>Add Task</h2>
+      <form id="taskForm" class="task-form">
+        <label>
+          Title
+          <input id="title" name="title" required maxlength="100" placeholder="e.g., Prepare sprint demo" />
+        </label>
+        <label>
+          Description
+          <textarea id="description" name="description" rows="3" placeholder="Optional details"></textarea>
+        </label>
+        <div class="row">
+          <label>
+            Priority
+            <select id="priority" name="priority">
+              <option value="high">High</option>
+              <option value="medium" selected>Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </label>
+          <label>
+            Due Date
+            <input id="dueDate" name="dueDate" type="date" />
+          </label>
+        </div>
+        <div class="row">
+          <label>
+            Category
+            <input id="category" name="category" maxlength="40" placeholder="e.g., Work" />
+          </label>
+          <label>
+            Estimated Hours
+            <input id="estimate" name="estimate" type="number" min="0" step="0.5" placeholder="0" />
+          </label>
+        </div>
+        <button type="submit">Add Task</button>
+      </form>
+    </section>
+
+    <section class="panel controls">
+      <h2>Organize Tasks</h2>
+      <div class="row">
+        <label>
+          Search
+          <input id="search" placeholder="Search by title, description, category" />
+        </label>
+        <label>
+          Filter
+          <select id="statusFilter">
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="overdue">Overdue</option>
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <label>
+          Sort By
+          <select id="sortBy">
+            <option value="priority">Priority</option>
+            <option value="dueDate">Due Date</option>
+            <option value="createdAt">Created Date</option>
+            <option value="title">Title</option>
+          </select>
+        </label>
+        <label>
+          Direction
+          <select id="sortDirection">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+          </select>
+        </label>
+      </div>
+      <button id="clearCompleted" type="button" class="secondary">Clear Completed</button>
+    </section>
+
+    <section class="panel">
+      <h2>Summary</h2>
+      <div id="summary" class="summary"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Task List</h2>
+      <ul id="taskList" class="task-list"></ul>
+    </section>
+  </main>
+
+  <template id="taskItemTemplate">
+    <li class="task-item">
+      <div class="task-header">
+        <div>
+          <h3 class="task-title"></h3>
+          <p class="task-meta"></p>
+        </div>
+        <span class="badge"></span>
+      </div>
+      <p class="task-description"></p>
+      <div class="task-actions">
+        <button class="toggle-complete" type="button"></button>
+        <button class="edit" type="button">Edit</button>
+        <button class="delete danger" type="button">Delete</button>
+      </div>
+    </li>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
