@@ -1,0 +1,107 @@
+import express from 'express';
+import dotenv from 'dotenv';
+import cron from 'node-cron';
+import Database from 'better-sqlite3';
+import twilio from 'twilio';
+import { openai } from '@ai-sdk/openai';
+import { generateText } from 'ai';
+
+dotenv.config();
+
+const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+const db = new Database('goalcoach.db');
+
+const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
+// Initialize tables
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  phone TEXT UNIQUE,
+  name TEXT
+);
+
+CREATE TABLE IF NOT EXISTS goals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER,
+  title TEXT,
+  frequency TEXT,
+  reminder_time TEXT,
+  status TEXT DEFAULT 'active'
+);
+`);
+
+app.get('/', (req, res) => {
+  res.send('GoalCoach API Running');
+});
+
+app.post('/goals', (req, res) => {
+  const { phone, name, title, frequency, reminder_time } = req.body;
+
+  let user = db.prepare('SELECT * FROM users WHERE phone = ?').get(phone);
+
+  if (!user) {
+    const result = db.prepare('INSERT INTO users (phone, name) VALUES (?, ?)').run(phone, name);
+    user = { id: result.lastInsertRowid };
+  }
+
+  db.prepare(
+    'INSERT INTO goals (user_id, title, frequency, reminder_time) VALUES (?, ?, ?, ?)'
+  ).run(user.id, title, frequency, reminder_time);
+
+  res.json({ success: true });
+});
+
+app.post('/sms/webhook', async (req, res) => {
+  const incoming = req.body.Body;
+  const from = req.body.From;
+
+  const user = db.prepare('SELECT * FROM users WHERE phone = ?').get(from);
+
+  if (!user) {
+    return res.send('User not found');
+  }
+
+  const prompt = `You are an accountability coach. The user texted: ${incoming}`;
+
+  const response = await generateText({
+    model: openai('gpt-4.1-mini'),
+    prompt
+  });
+
+  await client.messages.create({
+    body: response.text,
+    from: process.env.TWILIO_PHONE_NUMBER,
+    to: from
+  });
+
+  res.send('OK');
+});
+
+cron.schedule('* * * * *', async () => {
+  const goals = db.prepare('SELECT goals.*, users.phone FROM goals JOIN users ON users.id = goals.user_id').all();
+
+  const now = new Date();
+  const currentTime = now.toTimeString().slice(0,5);
+
+  for (const goal of goals) {
+    if (goal.reminder_time === currentTime) {
+      const text = `Reminder: ${goal.title}. Stay consistent today.`;
+
+      await client.messages.create({
+        body: text,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to: goal.phone
+      });
+    }
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on ${PORT}`);
+});
