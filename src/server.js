@@ -3,8 +3,6 @@ import dotenv from 'dotenv';
 import cron from 'node-cron';
 import Database from 'better-sqlite3';
 import twilio from 'twilio';
-import { openai } from '@ai-sdk/openai';
-import { generateText } from 'ai';
 
 dotenv.config();
 
@@ -57,7 +55,7 @@ app.post('/goals', (req, res) => {
 });
 
 app.post('/sms/webhook', async (req, res) => {
-  const incoming = req.body.Body;
+  const incoming = req.body.Body.toLowerCase();
   const from = req.body.From;
 
   const user = db.prepare('SELECT * FROM users WHERE phone = ?').get(from);
@@ -66,15 +64,18 @@ app.post('/sms/webhook', async (req, res) => {
     return res.send('User not found');
   }
 
-  const prompt = `You are an accountability coach. The user texted: ${incoming}`;
+  let reply = "Stay consistent. You got this.";
 
-  const response = await generateText({
-    model: openai('gpt-4.1-mini'),
-    prompt
-  });
+  if (incoming.includes("done")) {
+    reply = "Nice work. Progress logged.";
+  } else if (incoming.includes("skip")) {
+    reply = "Alright, reset for tomorrow.";
+  } else if (incoming.includes("tired")) {
+    reply = "Do the smallest version today. 10 minutes counts.";
+  }
 
   await client.messages.create({
-    body: response.text,
+    body: reply,
     from: process.env.TWILIO_PHONE_NUMBER,
     to: from
   });
