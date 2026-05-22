@@ -1,15 +1,13 @@
 {
   "name": "goalcoach",
   "version": "0.1.0",
-  "description": "AI accountability coach that tracks goals, sends SMS reminders, and chats with users.",
+  "description": "Accountability coach that tracks goals and sends SMS reminders.",
   "type": "module",
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js"
   },
   "dependencies": {
-    "@ai-sdk/openai": "latest",
-    "ai": "latest",
     "better-sqlite3": "latest",
     "cors": "latest",
     "dotenv": "latest",
