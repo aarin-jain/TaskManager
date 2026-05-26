@@ -38,12 +38,15 @@ app.get('/', (req, res) => {
 });
 
 app.post('/goals', (req, res) => {
-  const { phone, name, title, frequency, reminder_time } = req.body;
+  let { phone, name, title, frequency, reminder_time } = req.body;
 
-  let user = db.prepare('SELECT * FROM users WHERE phone = ?').get(phone);
+  phone = phone.trim();
+  const normalizedPhone = phone.startsWith('+') ? phone : `+${phone}`;
+
+  let user = db.prepare('SELECT * FROM users WHERE phone = ?').get(normalizedPhone);
 
   if (!user) {
-    const result = db.prepare('INSERT INTO users (phone, name) VALUES (?, ?)').run(phone, name);
+    const result = db.prepare('INSERT INTO users (phone, name) VALUES (?, ?)').run(normalizedPhone, name);
     user = { id: result.lastInsertRowid };
   }
 
@@ -55,10 +58,14 @@ app.post('/goals', (req, res) => {
 });
 
 app.post('/sms/webhook', async (req, res) => {
-  const incoming = req.body.Body.toLowerCase();
-  const from = req.body.From;
+  let from = req.body.From.trim();
+  const normalizedFrom = from.startsWith('+') ? from : `+${from}`;
 
-  const user = db.prepare('SELECT * FROM users WHERE phone = ?').get(from);
+  console.log("Incoming From:", normalizedFrom);
+
+  const incoming = req.body.Body.toLowerCase();
+
+  const user = db.prepare('SELECT * FROM users WHERE phone = ?').get(normalizedFrom);
 
   if (!user) {
     return res.send('User not found');
@@ -77,7 +84,7 @@ app.post('/sms/webhook', async (req, res) => {
   await client.messages.create({
     body: reply,
     from: process.env.TWILIO_PHONE_NUMBER,
-    to: from
+    to: normalizedFrom
   });
 
   res.send('OK');
